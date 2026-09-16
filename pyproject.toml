@@ -1,0 +1,19 @@
+[project]
+name = "osint-suite"
+version = "0.1.0"
+description = "Single CLI orchestrating theHarvester, sherlock, amass, holehe, spiderfoot, shodan and recon-ng"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+telegram = ["telethon>=1.36"]
+
+[project.scripts]
+osint = "osint_suite.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["osint_suite", "osint_suite.tools"]
