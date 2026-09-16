@@ -14,6 +14,12 @@ TOOL = "phoneinfoga"
 _SCANNER_RE = re.compile(r"^Results for (\S+)", re.MULTILINE)
 _URL_RE = re.compile(r"^\s*URL:", re.MULTILINE)
 
+# osint_suite/tools/phoneinfoga.py -> project root, where the shared .env lives
+# (scanner API keys, e.g. NUMVERIFY_API_KEY, GOOGLE_API_KEY/GOOGLE_CSE_ID). The
+# tool otherwise runs with cwd set to a fresh per-run results dir, so phoneinfoga's
+# own default ".env in cwd" lookup would never find it without pointing at it explicitly.
+_PROJECT_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+
 
 def run(number: str, out_dir: Path, disable: list[str] | None = None, extra_args: list[str] | None = None) -> ToolResult:
     binary = require_binary("phoneinfoga-bin")
@@ -23,6 +29,8 @@ def run(number: str, out_dir: Path, disable: list[str] | None = None, extra_args
     cmd = [binary, "scan", "-n", number]
     for scanner in disable or []:
         cmd += ["-D", scanner]
+    if _PROJECT_ENV_FILE.exists():
+        cmd += ["--env-file", str(_PROJECT_ENV_FILE)]
     cmd += extra_args or []
 
     result = run_cmd(TOOL, cmd, out_dir, cwd=tool_dir)
