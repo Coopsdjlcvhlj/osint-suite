@@ -7,6 +7,7 @@ Usage:
     python3 -m osint_suite domain example.com
     python3 -m osint_suite username johndoe
     python3 -m osint_suite email john@example.com
+    python3 -m osint_suite phone +14155552671 --deep
     python3 -m osint_suite spiderfoot example.com --use-case footprint
     python3 -m osint_suite shodan host 1.1.1.1
     python3 -m osint_suite recon myworkspace --resource-file recon.rc
@@ -22,7 +23,19 @@ from pathlib import Path
 
 from osint_suite.report import write_report
 from osint_suite.runner import PACMAN_PACKAGE, ToolResult, ToolUnavailable, new_run_dir
-from osint_suite.tools import amass, dnsrecon_tool, holehe, recon_ng, sherlock, shodan_tool, spiderfoot, theharvester, whois_tool
+from osint_suite.tools import (
+    amass,
+    dnsrecon_tool,
+    holehe,
+    phone_lookup,
+    phoneinfoga,
+    recon_ng,
+    sherlock,
+    shodan_tool,
+    spiderfoot,
+    theharvester,
+    whois_tool,
+)
 
 
 def _print_result(r: ToolResult) -> None:
@@ -106,6 +119,24 @@ def cmd_email(args: argparse.Namespace) -> int:
         print(f"[holehe] SKIPPED: {exc}")
     _finish(args.target, run_dir, results)
     return 0 if all(r.ok for r in results) else 1
+
+
+def cmd_phone(args: argparse.Namespace) -> int:
+    run_dir = new_run_dir(args.target)
+    results = []
+    try:
+        results.append(phone_lookup.run(args.target, run_dir, region=args.region))
+        _print_result(results[-1])
+    except ToolUnavailable as exc:
+        print(f"[phonenumbers] SKIPPED: {exc}")
+    if args.deep:
+        try:
+            results.append(phoneinfoga.run(args.target, run_dir, disable=args.disable))
+            _print_result(results[-1])
+        except ToolUnavailable as exc:
+            print(f"[phoneinfoga] SKIPPED: {exc}")
+    _finish(args.target, run_dir, results)
+    return 0 if results and all(r.ok for r in results) else 1
 
 
 def cmd_spiderfoot(args: argparse.Namespace) -> int:
@@ -214,6 +245,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("target")
     p.add_argument("--site", action="append", help="Limit sherlock to specific site(s); repeatable")
     p.set_defaults(func=cmd_username)
+
+    p = sub.add_parser("phone", help="Run phone-number recon (phonenumbers, optionally phoneinfoga)")
+    p.add_argument("target", help="Phone number in E164 or international format, e.g. +14155552671")
+    p.add_argument("--region", help="Default region (e.g. US) to assume for a number with no country code")
+    p.add_argument("--deep", action="store_true", help="Also run phoneinfoga (free-scanner footprint dorks)")
+    p.add_argument("--disable", nargs="+", help="phoneinfoga scanner(s) to skip; only used with --deep")
+    p.set_defaults(func=cmd_phone)
 
     p = sub.add_parser("email", help="Run email recon (holehe)")
     p.add_argument("target")

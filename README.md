@@ -2,7 +2,7 @@
 
 One CLI in front of the OSINT tools already installed on this machine:
 theHarvester, sherlock, amass, holehe, spiderfoot, shodan (CLI), recon-ng,
-whois, dnsrecon.
+whois, dnsrecon, phonenumbers, phoneinfoga.
 
 It doesn't reimplement anything — it shells out to each tool's real binary,
 normalizes where results land, and writes a combined `report.json` /
@@ -13,8 +13,8 @@ normalizes where results land, and writes a combined `report.json` /
 The tools themselves are installed via pacman/yay, not by this project:
 
 ```
-sudo pacman -S theharvester-git sherlock-git amass holehe spiderfoot shodan recon-ng whois
-yay -S python-dnsrecon   # AUR
+sudo pacman -S theharvester-git sherlock-git amass holehe spiderfoot shodan recon-ng whois python-phonenumbers
+yay -S python-dnsrecon phoneinfoga-bin   # AUR
 ```
 
 Check what's actually on PATH:
@@ -36,6 +36,8 @@ python3 -m osint_suite domain example.com
 python3 -m osint_suite domain example.com --tools whois dnsrecon
 python3 -m osint_suite username johndoe
 python3 -m osint_suite email person@example.com
+python3 -m osint_suite phone +14155552671
+python3 -m osint_suite phone +14155552671 --deep
 python3 -m osint_suite spiderfoot example.com --use-case footprint
 python3 -m osint_suite shodan host 1.1.1.1
 python3 -m osint_suite recon myworkspace --resource-file ./recon.rc

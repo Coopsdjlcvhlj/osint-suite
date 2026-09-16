@@ -24,6 +24,7 @@ PACMAN_PACKAGE = {
     "recon-ng": "recon-ng",
     "whois": "whois",
     "dnsrecon": "python-dnsrecon",
+    "phoneinfoga-bin": "phoneinfoga-bin",
 }
 
 
