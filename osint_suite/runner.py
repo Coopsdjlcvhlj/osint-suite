@@ -23,7 +23,7 @@ PACMAN_PACKAGE = {
     "shodan": "shodan",
     "recon-ng": "recon-ng",
     "whois": "whois",
-    "dnsrecon": "dnsrecon",
+    "dnsrecon": "python-dnsrecon",
 }
 
 

@@ -14,7 +14,7 @@ The tools themselves are installed via pacman/yay, not by this project:
 
 ```
 sudo pacman -S theharvester-git sherlock-git amass holehe spiderfoot shodan recon-ng whois
-yay -S dnsrecon   # AUR
+yay -S python-dnsrecon   # AUR
 ```
 
 Check what's actually on PATH:
