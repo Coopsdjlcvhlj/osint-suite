@@ -105,6 +105,40 @@ the commands you'd type inside the shell (`modules load ...`, `options set
 ...`, `run`) and pass it via `--resource-file`. For exploration, just run
 `recon-ng -w <workspace>` directly.
 
+## Pivoting (auto-chaining discoveries)
+
+`osint pivot <target> --type {domain,phone}` is an event-driven mode: instead
+of running each tool once against the seed and stopping, it also feeds
+whatever new entities a tool turns up (subdomains, emails, IPs, a validated
+phone number) into whichever *other* tools consume that entity type, and
+keeps going breadth-first up to `--depth` hops.
+
+```
+python3 -m osint_suite pivot example.com --type domain          # depth 1, max 15 events
+python3 -m osint_suite pivot example.com --type domain --depth 2 --max-events 40
+python3 -m osint_suite pivot +14155552671 --type phone           # phonenumbers -> phoneinfoga if valid
+```
+
+Wiring, for `--type domain`: `theharvester`/`amass`/`dnsrecon`/`spiderfoot`
+run against the seed domain and any emails/IPs/subdomains they find get
+queued; subdomains feed back into `dnsrecon` (and `whois` for the apex domain
+only — subdomains aren't independently WHOIS-registrable); emails feed into
+`holehe`. For `--type phone`: `phonenumbers` validates the number, and only
+if it's valid does `phoneinfoga` run against it.
+
+Safety rails: subdomain/domain pivots stay inside the seed domain's own
+scope unless you pass `--allow-external`, and `--max-events` (default 15)
+caps how many entities actually get processed — a busy domain can turn up
+thousands of candidate subdomains, most of them noise, so the cap is there to
+stop that from becoming thousands of automatic follow-up requests. When the
+cap is hit, the run tells you how many discovered entities were left
+unprocessed. Restrict to specific modules with `--modules theharvester
+dnsrecon` etc.
+
+Every run writes `pivot-graph.md`/`pivot-graph.json` alongside the usual
+`report.md`/`report.json`, showing which module ran against which discovered
+entity and at what depth.
+
 ## Scope
 
 Only use this against targets you're authorized to investigate (your own

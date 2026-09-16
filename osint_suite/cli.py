@@ -8,6 +8,7 @@ Usage:
     python3 -m osint_suite username johndoe
     python3 -m osint_suite email john@example.com
     python3 -m osint_suite phone +14155552671 --deep
+    python3 -m osint_suite pivot example.com --type domain --depth 1
     python3 -m osint_suite spiderfoot example.com --use-case footprint
     python3 -m osint_suite shodan host 1.1.1.1
     python3 -m osint_suite recon myworkspace --resource-file recon.rc
@@ -21,6 +22,7 @@ import shutil
 import sys
 from pathlib import Path
 
+from osint_suite import pivot
 from osint_suite.report import write_report
 from osint_suite.runner import PACMAN_PACKAGE, ToolResult, ToolUnavailable, new_run_dir
 from osint_suite.tools import (
@@ -190,6 +192,26 @@ def cmd_telegram_self_audit(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_pivot(args: argparse.Namespace) -> int:
+    run_dir = new_run_dir(args.target)
+    print(f"Pivoting from {args.type}:{args.target} (depth<={args.depth}, max {args.max_events} events)")
+    if args.type == "domain" and not args.allow_external:
+        print("Scope: staying within the target domain's own subdomains. Use --allow-external to lift this.")
+    results, graph = pivot.run_pivot(
+        args.target,
+        args.type,
+        run_dir,
+        max_depth=args.depth,
+        max_events=args.max_events,
+        module_names=args.modules,
+        allow_external=args.allow_external,
+    )
+    graph_path = pivot.write_graph(run_dir, graph, args.target, args.type)
+    _finish(args.target, run_dir, results)
+    print(f"Pivot graph: {graph_path}")
+    return 0 if results and all(r.ok for r in results) else 1
+
+
 def cmd_recon(args: argparse.Namespace) -> int:
     run_dir = new_run_dir(args.workspace)
     results = []
@@ -275,6 +297,18 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--api-hash", required=True, help="From https://my.telegram.org/apps")
     p.add_argument("--session", help="Session file path (default: ~/.config/osint-suite/telegram_self_audit.session)")
     p.set_defaults(func=cmd_telegram_self_audit)
+
+    p = sub.add_parser(
+        "pivot",
+        help="Event-driven recon: auto-chain discovered subdomains/emails/IPs/a validated phone number into follow-up tools",
+    )
+    p.add_argument("target")
+    p.add_argument("--type", required=True, choices=["domain", "phone"])
+    p.add_argument("--depth", type=int, default=1, help="How many hops of pivoting to follow (default: 1)")
+    p.add_argument("--max-events", type=int, default=15, help="Safety cap on total entities processed (default: 15)")
+    p.add_argument("--modules", nargs="+", help="Restrict to specific pivot modules (default: all applicable)")
+    p.add_argument("--allow-external", action="store_true", help="Allow pivoting to domains/subdomains outside the seed domain's scope")
+    p.set_defaults(func=cmd_pivot)
 
     p = sub.add_parser("recon", help="Run recon-ng non-interactively against a resource (.rc) file")
     p.add_argument("workspace")
