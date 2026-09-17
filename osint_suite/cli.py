@@ -92,11 +92,12 @@ def cmd_domain(args: argparse.Namespace) -> int:
                 print(f"[skip] unknown tool for domain scan: {name}")
                 continue
         except ToolUnavailable as exc:
-            print(f"[{name}] SKIPPED: {exc}")
+            results.append(ToolResult.unavailable(name, str(exc)))
+            _print_result(results[-1])
             continue
         _print_result(results[-1])
     _finish(args.target, run_dir, results)
-    return 0 if all(r.ok for r in results) else 1
+    return 0 if results and all(r.ok for r in results) else 1
 
 
 def cmd_username(args: argparse.Namespace) -> int:
@@ -106,9 +107,10 @@ def cmd_username(args: argparse.Namespace) -> int:
         results.append(sherlock.run(args.target, run_dir, sites=args.site))
         _print_result(results[-1])
     except ToolUnavailable as exc:
-        print(f"[sherlock] SKIPPED: {exc}")
+        results.append(ToolResult.unavailable("sherlock", str(exc)))
+        _print_result(results[-1])
     _finish(args.target, run_dir, results)
-    return 0 if all(r.ok for r in results) else 1
+    return 0 if results and all(r.ok for r in results) else 1
 
 
 def cmd_email(args: argparse.Namespace) -> int:
@@ -118,9 +120,10 @@ def cmd_email(args: argparse.Namespace) -> int:
         results.append(holehe.run(args.target, run_dir, only_used=not args.all_sites))
         _print_result(results[-1])
     except ToolUnavailable as exc:
-        print(f"[holehe] SKIPPED: {exc}")
+        results.append(ToolResult.unavailable("holehe", str(exc)))
+        _print_result(results[-1])
     _finish(args.target, run_dir, results)
-    return 0 if all(r.ok for r in results) else 1
+    return 0 if results and all(r.ok for r in results) else 1
 
 
 def cmd_phone(args: argparse.Namespace) -> int:
@@ -130,13 +133,15 @@ def cmd_phone(args: argparse.Namespace) -> int:
         results.append(phone_lookup.run(args.target, run_dir, region=args.region))
         _print_result(results[-1])
     except ToolUnavailable as exc:
-        print(f"[phonenumbers] SKIPPED: {exc}")
+        results.append(ToolResult.unavailable("phonenumbers", str(exc)))
+        _print_result(results[-1])
     if args.deep:
         try:
             results.append(phoneinfoga.run(args.target, run_dir, disable=args.disable))
             _print_result(results[-1])
         except ToolUnavailable as exc:
-            print(f"[phoneinfoga] SKIPPED: {exc}")
+            results.append(ToolResult.unavailable("phoneinfoga", str(exc)))
+            _print_result(results[-1])
     _finish(args.target, run_dir, results)
     return 0 if results and all(r.ok for r in results) else 1
 
@@ -148,9 +153,10 @@ def cmd_spiderfoot(args: argparse.Namespace) -> int:
         results.append(spiderfoot.run(args.target, run_dir, use_case=args.use_case))
         _print_result(results[-1])
     except ToolUnavailable as exc:
-        print(f"[spiderfoot] SKIPPED: {exc}")
+        results.append(ToolResult.unavailable("spiderfoot", str(exc)))
+        _print_result(results[-1])
     _finish(args.target, run_dir, results)
-    return 0 if all(r.ok for r in results) else 1
+    return 0 if results and all(r.ok for r in results) else 1
 
 
 def cmd_shodan(args: argparse.Namespace) -> int:
@@ -162,9 +168,10 @@ def cmd_shodan(args: argparse.Namespace) -> int:
         if results[-1].stdout_path:
             print(results[-1].stdout_path.read_text())
     except ToolUnavailable as exc:
-        print(f"[shodan] SKIPPED: {exc}")
+        results.append(ToolResult.unavailable("shodan", str(exc)))
+        _print_result(results[-1])
     _finish(args.args[0] if args.args else "shodan", run_dir, results)
-    return 0 if all(r.ok for r in results) else 1
+    return 0 if results and all(r.ok for r in results) else 1
 
 
 def cmd_telegram_self_audit(args: argparse.Namespace) -> int:
@@ -219,9 +226,10 @@ def cmd_recon(args: argparse.Namespace) -> int:
         results.append(recon_ng.run(args.workspace, args.resource_file, run_dir))
         _print_result(results[-1])
     except ToolUnavailable as exc:
-        print(f"[recon-ng] SKIPPED: {exc}")
+        results.append(ToolResult.unavailable("recon-ng", str(exc)))
+        _print_result(results[-1])
     _finish(args.workspace, run_dir, results)
-    return 0 if all(r.ok for r in results) else 1
+    return 0 if results and all(r.ok for r in results) else 1
 
 
 def cmd_all(args: argparse.Namespace) -> int:
@@ -243,10 +251,25 @@ def cmd_all(args: argparse.Namespace) -> int:
             results.append(action())
             _print_result(results[-1])
         except ToolUnavailable as exc:
-            print(f"[{name}] SKIPPED: {exc}")
+            results.append(ToolResult.unavailable(name, str(exc)))
+            _print_result(results[-1])
 
     _finish(args.target, run_dir, results)
     return 0 if results and all(r.ok for r in results) else 1
+
+
+def _nonnegative_int(value: str) -> int:
+    number = int(value)
+    if number < 0:
+        raise argparse.ArgumentTypeError("must be non-negative")
+    return number
+
+
+def _positive_int(value: str) -> int:
+    number = int(value)
+    if number < 1:
+        raise argparse.ArgumentTypeError("must be positive")
+    return number
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -304,9 +327,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("target")
     p.add_argument("--type", required=True, choices=["domain", "phone"])
-    p.add_argument("--depth", type=int, default=1, help="How many hops of pivoting to follow (default: 1)")
-    p.add_argument("--max-events", type=int, default=15, help="Safety cap on total entities processed (default: 15)")
-    p.add_argument("--modules", nargs="+", help="Restrict to specific pivot modules (default: all applicable)")
+    p.add_argument("--depth", type=_nonnegative_int, default=1, help="How many hops of pivoting to follow (default: 1)")
+    p.add_argument("--max-events", type=_positive_int, default=15, help="Safety cap on total entities processed (default: 15)")
+    p.add_argument("--modules", nargs="+", choices=pivot.module_names(), help="Restrict to specific pivot modules (default: all applicable)")
     p.add_argument("--allow-external", action="store_true", help="Allow pivoting to domains/subdomains outside the seed domain's scope")
     p.set_defaults(func=cmd_pivot)
 

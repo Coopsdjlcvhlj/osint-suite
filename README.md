@@ -68,6 +68,15 @@ osint-results/<sanitized-target>/<UTC-timestamp>/
   report.md     -- human-readable summary
 ```
 
+The results root is relative to the directory where you launch the CLI.
+Timestamps include microseconds; if a directory already exists, a numeric
+suffix keeps each run separate without overwriting earlier reports.
+
+Scan commands exit with status `0` only when at least one tool ran and every
+requested tool succeeded. Failed or unavailable tools remain in both reports
+with their error details; the remaining tools in the pipeline still run.
+Invalid CLI arguments exit with status `2` before scanning.
+
 ## Telegram self-exposure audit
 
 `telegram-self-audit` checks how exposed *your own* Telegram account is —
@@ -137,7 +146,25 @@ dnsrecon` etc.
 
 Every run writes `pivot-graph.md`/`pivot-graph.json` alongside the usual
 `report.md`/`report.json`, showing which module ran against which discovered
-entity and at what depth.
+entity and at what depth. Each follow-up entry includes its parent entity
+and the module that discovered it. Unavailable modules appear as failures;
+failed tool runs do not trigger further pivots.
+
+`--depth` must be non-negative (`0` runs only against the seed), and
+`--max-events` must be positive. Unknown `--modules` names are rejected.
+The domain scope check is applied centrally after extraction, so
+`--allow-external` also works for domains discovered by any of the parsers.
+
+## Development checks
+
+Run the regression suite from the project root:
+
+```
+python3 -m unittest discover -s tests -v
+```
+
+Tests use temporary directories, mocked scanners, and small local Python
+processes. They require no API keys, installed OSINT tools, or network access.
 
 ## Scope
 

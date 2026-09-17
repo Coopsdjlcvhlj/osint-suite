@@ -63,7 +63,7 @@ def _extract_theharvester(result: ToolResult, apex: str) -> list[tuple[str, str]
     found: list[tuple[str, str]] = []
     for host in data.get("hosts") or []:
         name = host.split(":")[0].strip().strip("'\"")
-        if name and name != apex and _in_scope(name, apex):
+        if name and name != apex:
             found.append((SUBDOMAIN, name))
     for email in data.get("emails") or []:
         addr = email.strip().strip("'\"")
@@ -83,7 +83,7 @@ def _extract_amass(result: ToolResult, apex: str) -> list[tuple[str, str]]:
     found: list[tuple[str, str]] = []
     for line in txt_path.read_text().splitlines():
         name = line.strip()
-        if name and name != apex and _in_scope(name, apex):
+        if name and name != apex:
             found.append((SUBDOMAIN, name))
     return found
 
@@ -98,7 +98,7 @@ def _extract_dnsrecon(result: ToolResult, apex: str) -> list[tuple[str, str]]:
             continue
         for key in ("target", "name", "exchange", "mname"):
             name = rec.get(key)
-            if name and name != apex and _in_scope(name, apex):
+            if name and name != apex:
                 found.append((SUBDOMAIN, name))
         addr = rec.get("address")
         if addr:
@@ -126,8 +126,6 @@ def _extract_spiderfoot(result: ToolResult, apex: str) -> list[tuple[str, str]]:
             continue
         value = (ev.get("data") or "").strip()
         if not value or value == apex:
-            continue
-        if kind == SUBDOMAIN and not _in_scope(value, apex):
             continue
         found.append((kind, value))
     return found
@@ -165,6 +163,10 @@ def _modules() -> list[PivotModule]:
     ]
 
 
+def module_names() -> list[str]:
+    return [module.name for module in _modules()]
+
+
 def run_pivot(
     target: str,
     target_type: str,
@@ -174,15 +176,22 @@ def run_pivot(
     module_names: list[str] | None = None,
     allow_external: bool = False,
 ) -> tuple[list[ToolResult], list[dict]]:
+    if max_depth < 0:
+        raise ValueError("max_depth must be non-negative")
+    if max_events < 1:
+        raise ValueError("max_events must be positive")
+    available = _modules()
+    unknown = set(module_names or []) - {mod.name for mod in available}
+    if unknown:
+        raise ValueError(f"unknown pivot module(s): {', '.join(sorted(unknown))}")
     apex = _apex_scope(target) if target_type in (DOMAIN, SUBDOMAIN) else ""
-    mods = [m for m in _modules() if not module_names or m.name in module_names]
+    mods = [m for m in available if not module_names or m.name in module_names]
 
     seen: set[tuple[str, str]] = {(target_type, target.lower())}
     queue: deque[Event] = deque([Event(type=target_type, value=target, depth=0)])
     graph: list[dict] = []
     results: list[ToolResult] = []
     processed = 0
-    discovered = 0
 
     while queue and processed < max_events:
         event = queue.popleft()
@@ -194,8 +203,7 @@ def run_pivot(
             try:
                 result = mod.runner(event.value, event_dir)
             except ToolUnavailable as exc:
-                print(f"[{mod.name}] SKIPPED for {event.type}:{event.value}: {exc}")
-                continue
+                result = ToolResult.unavailable(mod.name, str(exc))
             results.append(result)
             status = "ok" if result.ok else f"FAILED ({result.returncode})"
             summary = f" — {result.summary}" if result.summary else ""
@@ -208,10 +216,12 @@ def run_pivot(
                     "input_type": event.type,
                     "input_value": event.value,
                     "ok": result.ok,
+                    "source_module": event.source_module,
+                    "parent": event.parent,
                 }
             )
 
-            if event.depth >= max_depth:
+            if event.depth >= max_depth or not result.ok:
                 continue
             for new_type, new_value in mod.extract(result, apex):
                 key = (new_type, new_value.lower())
@@ -220,10 +230,9 @@ def run_pivot(
                 if new_type in (DOMAIN, SUBDOMAIN) and not allow_external and apex and not _in_scope(new_value, apex):
                     continue
                 seen.add(key)
-                discovered += 1
                 queue.append(Event(type=new_type, value=new_value, depth=event.depth + 1, source_module=mod.name, parent=f"{event.type}:{event.value}"))
 
-    if discovered and processed >= max_events:
+    if queue:
         print(f"\n[pivot] hit --max-events cap ({max_events}); {len(queue)} discovered entit(y/ies) left unprocessed.")
 
     return results, graph
@@ -236,6 +245,8 @@ def write_graph(run_dir: Path, graph: list[dict], target: str, target_type: str)
         indent = "  " * entry["depth"]
         status = "OK" if entry["ok"] else "FAILED"
         lines.append(f"{indent}- [{status}] {entry['module']}({entry['input_type']}:{entry['input_value']})")
+        if entry.get("parent"):
+            lines.append(f"{indent}  - Discovered by {entry['source_module']} from `{entry['parent']}`")
     md_path.write_text("\n".join(lines))
     (run_dir / "pivot-graph.json").write_text(json.dumps(graph, indent=2))
     return md_path

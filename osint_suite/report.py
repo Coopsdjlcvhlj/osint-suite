@@ -21,7 +21,7 @@ def write_report(target: str, run_dir: Path, results: list[ToolResult]) -> tuple
     for r in results:
         status = "OK" if r.ok else f"FAILED (exit {r.returncode})"
         lines.append(f"## {r.tool} — {status}")
-        lines.append(f"- Command: `{' '.join(r.command)}`")
+        lines.append(f"- Command: `{' '.join(r.command)}`" if r.command else "- Command: not started")
         lines.append(f"- Duration: {r.duration_seconds:.1f}s")
         if r.summary:
             lines.append(f"- Summary: {r.summary}")

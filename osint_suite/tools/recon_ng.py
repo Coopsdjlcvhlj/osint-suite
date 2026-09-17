@@ -18,7 +18,7 @@ TOOL = "recon-ng"
 
 def run(workspace: str, resource_file: str, out_dir: Path) -> ToolResult:
     binary = require_binary("recon-ng")
-    resource_path = Path(resource_file).expanduser()
+    resource_path = Path(resource_file).expanduser().resolve()
     if not resource_path.is_file():
         raise ToolUnavailable(f"recon-ng resource file not found: {resource_path}")
 
