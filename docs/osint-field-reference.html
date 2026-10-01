@@ -1,0 +1,586 @@
+<title>Польовий довідник OSINT</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #eef1ec;
+    --surface: #ffffff;
+    --surface-sunk: #e4e8e0;
+    --ink: #1a1e1b;
+    --ink-muted: #5c655d;
+    --ink-faint: #8b9389;
+    --border: #cfd5c8;
+    --border-strong: #b6bdac;
+    --accent: #8a6a2f;
+    --accent-ink: #fff8ec;
+    --accent-soft: #f3e8d3;
+    --good: #2f6e5e;
+    --good-soft: #dfeee9;
+    --warn: #a85a2a;
+    --warn-soft: #f6e4d6;
+    --paid: #7a3b52;
+    --paid-soft: #f1dfe6;
+    --shadow: 0 1px 2px rgba(26,30,27,0.06), 0 6px 16px -10px rgba(26,30,27,0.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14170f;
+      --surface: #1c2117;
+      --surface-sunk: #171a13;
+      --ink: #eceee6;
+      --ink-muted: #a5ac9c;
+      --ink-faint: #717a68;
+      --border: #333a2b;
+      --border-strong: #454e39;
+      --accent: #d4a24f;
+      --accent-ink: #1c1608;
+      --accent-soft: #342a16;
+      --good: #5bbba0;
+      --good-soft: #1b2e27;
+      --warn: #d98e5c;
+      --warn-soft: #332419;
+      --paid: #d389a3;
+      --paid-soft: #301e26;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 20px -12px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14170f;
+    --surface: #1c2117;
+    --surface-sunk: #171a13;
+    --ink: #eceee6;
+    --ink-muted: #a5ac9c;
+    --ink-faint: #717a68;
+    --border: #333a2b;
+    --border-strong: #454e39;
+    --accent: #d4a24f;
+    --accent-ink: #1c1608;
+    --accent-soft: #342a16;
+    --good: #5bbba0;
+    --good-soft: #1b2e27;
+    --warn: #d98e5c;
+    --warn-soft: #332419;
+    --paid: #d389a3;
+    --paid-soft: #301e26;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 20px -12px rgba(0,0,0,0.6);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    padding-inline: 20px;
+    padding-block: 28px 64px;
+  }
+  a { color: var(--accent); }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+  .wrap {
+    max-width: 1180px;
+    margin-inline: auto;
+  }
+
+  header.page {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 18px;
+    margin-bottom: 20px;
+  }
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0 0 6px;
+  }
+  h1 {
+    font-family: "Archivo", sans-serif;
+    font-weight: 800;
+    font-size: clamp(28px, 4.2vw, 42px);
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 0;
+  }
+  .subhead {
+    color: var(--ink-muted);
+    max-width: 52ch;
+    margin: 10px 0 0;
+  }
+  .statline {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  .stat { text-align: right; }
+  .stat .n {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
+    font-size: 22px;
+    font-variant-numeric: tabular-nums;
+    display: block;
+    line-height: 1.1;
+  }
+  .stat .l {
+    font-size: 11px;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  .scope-note {
+    background: var(--surface-sunk);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin-bottom: 10px;
+  }
+  .scope-note strong { color: var(--ink); }
+  .legend {
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin: 0 0 22px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 22px;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    padding-block: 10px;
+    z-index: 5;
+  }
+  #search {
+    flex: 1 1 220px;
+    min-width: 0;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13.5px;
+    color: var(--ink);
+  }
+  #search:focus-visible, .chip:focus-visible, .navlink:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  #search::placeholder { color: var(--ink-faint); }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--ink-muted);
+    border-radius: 999px;
+    padding: 7px 13px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 190px 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+  nav.catnav {
+    position: sticky;
+    top: 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-right: 1px solid var(--border);
+    padding-right: 14px;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+  }
+  .navlink {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    text-decoration: none;
+    padding: 6px 0;
+    border-bottom: 1px solid transparent;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .navlink:hover { color: var(--ink); }
+  .navlink .c { color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+  main { min-width: 0; }
+
+  section.cat {
+    margin-bottom: 40px;
+    scroll-margin-top: 70px;
+  }
+  .cat-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    border-bottom: 1px solid var(--border-strong);
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+  }
+  .cat-idx {
+    font-family: "IBM Plex Mono", monospace;
+    color: var(--accent);
+    font-size: 13px;
+  }
+  .cat-head h2 {
+    font-family: "Archivo", sans-serif;
+    font-weight: 700;
+    font-size: 19px;
+    letter-spacing: -0.005em;
+    margin: 0;
+    flex: 1;
+  }
+  .cat-count {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 15px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .card.in-stack { border-color: var(--accent); }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .card h3 {
+    font-family: "Archivo", sans-serif;
+    font-size: 15.5px;
+    font-weight: 700;
+    margin: 0;
+  }
+  .card h3 a { color: var(--ink); text-decoration: none; }
+  .card h3 a:hover { color: var(--accent); }
+  .card p.desc {
+    margin: 0;
+    color: var(--ink-muted);
+    font-size: 13.3px;
+  }
+  .note {
+    font-size: 12px;
+    color: var(--warn);
+    background: var(--warn-soft);
+    border-radius: 4px;
+    padding: 5px 8px;
+  }
+  .cmd {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    background: var(--surface-sunk);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px 8px;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: auto;
+  }
+  .badge {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    padding: 3px 7px;
+  }
+  .b-free { background: var(--good-soft); color: var(--good); }
+  .b-key  { background: var(--warn-soft); color: var(--warn); }
+  .b-paid { background: var(--paid-soft); color: var(--paid); }
+  .b-stack { background: var(--accent); color: var(--accent-ink); }
+
+  .empty {
+    color: var(--ink-faint);
+    font-size: 13.5px;
+    padding: 30px 0;
+    text-align: center;
+  }
+
+  footer {
+    margin-top: 44px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--ink-faint);
+    font-family: "IBM Plex Mono", monospace;
+  }
+
+  @media (max-width: 760px) {
+    .layout { grid-template-columns: 1fr; }
+    nav.catnav {
+      position: static;
+      flex-direction: row;
+      overflow-x: auto;
+      overflow-y: visible;
+      max-height: none;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      padding-right: 0;
+      padding-bottom: 10px;
+      gap: 14px;
+    }
+    .navlink { border-bottom: none; flex-direction: column; gap: 2px; }
+    header.page { align-items: flex-start; }
+    .statline { gap: 16px; }
+    .stat { text-align: left; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="page">
+    <div>
+      <p class="eyebrow">osint / recon · польовий довідник</p>
+      <h1>Чим копати, коли копаєш</h1>
+      <p class="subhead">Курований список робочих інструментів розвідки на відкритих джерелах, згрупований за етапами розслідування — заміна мертвим посиланням osintframework.com.</p>
+    </div>
+    <div class="statline">
+      <div class="stat"><span class="n" id="stat-total">—</span><span class="l">інструментів</span></div>
+      <div class="stat"><span class="n" id="stat-free">—</span><span class="l">без ключа</span></div>
+      <div class="stat"><span class="n" id="stat-stack">—</span><span class="l">вже в osint-suite</span></div>
+    </div>
+  </header>
+
+  <p class="scope-note"><strong>Межі застосування.</strong> Усе нижче — для роботи з власними активами, авторизованим пентестом/CTF чи дослідженням публічних даних. Жоден пункт тут не призначений для розкриття приватних налаштувань чи сесій третьої особи без її згоди.</p>
+  <p class="legend">Позначка стосується найсерйознішого типового використання (повноцінний API/розширені дані). Коли базовий веб-доступ безкоштовний, а платний лише розширений рівень — це написано в описі чи примітці картки.</p>
+
+  <div class="controls">
+    <input id="search" type="text" placeholder="пошук: назва, опис, категорія…" autocomplete="off">
+    <div class="chips" id="filters">
+      <button class="chip" data-filter="all" aria-pressed="true">усі</button>
+      <button class="chip" data-filter="stack" aria-pressed="false">у моєму osint-suite</button>
+      <button class="chip" data-filter="free" aria-pressed="false">без ключа</button>
+      <button class="chip" data-filter="key" aria-pressed="false">потрібен ключ</button>
+      <button class="chip" data-filter="paid" aria-pressed="false">платно</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <nav class="catnav" id="catnav"></nav>
+    <main id="main"></main>
+  </div>
+
+  <footer>дані звірені з upstream-джерелами на 2026-10-01 · клацни по назві інструмента, щоб відкрити сайт</footer>
+</div>
+
+<script>
+const DATA = [
+  { cat: "Особа / юзернейми", items: [
+    { name: "Sherlock", url: "https://github.com/sherlock-project/sherlock", desc: "Перевірка юзернейма на ~400 сайтах одразу.", status: "free", stack: true, cmd: "osint username <nick>" },
+    { name: "Maigret", url: "https://github.com/soxoj/maigret", desc: "Форк-наступник Sherlock, глибший парсинг профілів і звіт у HTML.", status: "free" },
+    { name: "WhatsMyName", url: "https://github.com/WebBreacher/WhatsMyName", desc: "Велика спільна база сайтів для перевірки ніка. Власний CLI-чекер прибрали в 2023 — зараз це дані + вебінтерфейс, автоматизація через сторонні обгортки.", status: "free" },
+    { name: "Namechk", url: "https://namechk.com/", desc: "Швидка перевірка зайнятості ніка на соцмережах і доменах.", status: "free" },
+  ]},
+  { cat: "Email", items: [
+    { name: "theHarvester", url: "https://github.com/laramies/theHarvester", desc: "Збір email/субдоменів з пошукових рушіїв, сертифікатів, hunter.how.", status: "free", stack: true, note: "ключ потрібен лише окремим джерелам (hunter.how, VirusTotal) — базовий запуск працює й без нього", cmd: "osint domain <domain> --tools theharvester" },
+    { name: "Holehe", url: "https://github.com/megadose/holehe", desc: "Чи зареєстрована пошта на ~120 сервісах, через ендпоінти 'забув пароль'.", status: "free", stack: true, cmd: "osint email <addr>" },
+    { name: "EmailRep.io", url: "https://emailrep.io/", desc: "Репутація адреси: злиті бази, домен-ризик, активність у соцмережах.", status: "key" },
+    { name: "Have I Been Pwned", url: "https://haveibeenpwned.com/", desc: "Перевірка участі в зливах через веб безкоштовна.", status: "free", note: "платний лише API пошуку зливів за email; Pwned Passwords API — безкоштовний, без ключа" },
+  ]},
+  { cat: "Телефон", items: [
+    { name: "phonenumbers", url: "https://github.com/daviddrysdale/python-phonenumbers", desc: "Офлайн-розбір номера: регіон і початковий оператор. Не підтверджує, що номер активний зараз, його поточне розташування чи перенесення між операторами.", status: "free", stack: true, cmd: "osint phone <number>" },
+    { name: "PhoneInfoga", url: "https://github.com/sundowndev/phoneinfoga", desc: "Агрегатор сканерів номера: OVH telephony (без ключа), numverify, Google CSE.", status: "key", stack: true, note: "автор позначив проєкт як непідтримуваний — нові помилки не виправляють", cmd: "osint phone --deep <number>" },
+    { name: "IGNORANT", url: "https://github.com/megadose/ignorant", desc: "Чи прив'язаний номер до акаунта в застосунках.", status: "free", note: "з 2021 оновлюється лише README — платформи відтоді змінювали ендпоінти, частина перевірок може не працювати" },
+  ]},
+  { cat: "Домени / мережа / інфраструктура", items: [
+    { name: "Amass", url: "https://github.com/owasp-amass/amass", desc: "Пасивна+активна розвідка субдоменів, ASN, DNS-графа. v5 — клієнт-сервер.", status: "free", stack: true, cmd: "osint domain <domain> --tools amass" },
+    { name: "dnsrecon", url: "https://github.com/darkoperator/dnsrecon", desc: "Перебір записів DNS, зонний трансфер, brute-force субдоменів.", status: "free", stack: true, cmd: "osint domain <domain> --tools dnsrecon" },
+    { name: "whois / RDAP", url: "https://lookup.icann.org/en", desc: "Реєстраційні дані домену: реєстратор, дати. Дані власника часто приховані приватністю реєстратора. Для gTLD з 2025 первинне джерело — RDAP (ICANN Lookup), класичний whois лишається головним для частини ccTLD.", status: "free", stack: true, cmd: "osint domain <domain> --tools whois" },
+    { name: "crt.sh", url: "https://crt.sh/", desc: "Пошук по Certificate Transparency — миттєво знаходить субдомени з SSL-сертифікатів.", status: "free" },
+    { name: "urlscan.io", url: "https://urlscan.io/", desc: "Сканує URL і будує граф доменів/IP/ресурсів зі знімком сторінки.", status: "free", note: "публічний пошук і ручне сканування безкоштовні; масове сканування через API — за ключем" },
+    { name: "Subfinder", url: "https://github.com/projectdiscovery/subfinder", desc: "Пасивний enum субдоменів з десятків джерел — швидка CLI-альтернатива amass.", status: "free" },
+    { name: "Shodan", url: "https://www.shodan.io/", desc: "Пошук відкритих портів/банерів/IoT по всьому інтернету.", status: "key", stack: true, cmd: 'osint shodan search "<query>"' },
+    { name: "Censys", url: "https://platform.censys.io/", desc: "CenQL-пошук хостів і сертифікатів. Legacy Search (search.censys.io) і старий API згортають у вересні 2026.", status: "key" },
+    { name: "SecurityTrails", url: "https://securitytrails.com/", desc: "Історія DNS-записів і WHOIS в часі — бачить те, що вже змінили.", status: "key" },
+    { name: "BuiltWith", url: "https://builtwith.com/", desc: "Технологічний стек сайту: CMS, аналітика, хостинг, CDN.", status: "free" },
+  ]},
+  { cat: "Фреймворки-агрегатори", items: [
+    { name: "SpiderFoot", url: "https://github.com/smicallef/spiderfoot", desc: "200+ модулів автоматично крос-корелюють дані по цілі в один граф.", status: "free", stack: true, note: "останній коміт — листопад 2023; частина модулів може відставати від змін API джерел", cmd: "osint spiderfoot <target>" },
+    { name: "Recon-ng", url: "https://github.com/lanmaster53/recon-ng", desc: "Модульний фреймворк у стилі Metasploit для веб-розвідки.", status: "free", stack: true, note: "ключі потрібні лише окремим модулям з маркетплейсу", cmd: "osint recon <workspace> --resource-file ./recon.rc" },
+    { name: "Maltego CE", url: "https://docs.maltego.com/en/support/solutions/articles/15000018947-what-is-maltego-community-edition-ce-", desc: "Візуальний граф зв'язків. Community Edition (Basic) безкоштовна за реєстрацією Maltego ID, з лімітами на обсяг і трансформи.", status: "free" },
+  ]},
+  { cat: "Зображення, відео, геолокація", items: [
+    { name: "ExifTool", url: "https://exiftool.org/", desc: "Витягує EXIF/метадані з фото, PDF, Office-файлів — геотеги, автор, софт.", status: "free" },
+    { name: "Google Lens", url: "https://lens.google.com/", desc: "Зворотний пошук зображення в індексі Google.", status: "free" },
+    { name: "Yandex Images", url: "https://yandex.com/images/", desc: "Альтернативний індекс зворотного пошуку зображень — інколи знаходить те, чого немає в Google.", status: "free" },
+    { name: "InVID-WeVerify", url: "https://www.invid-project.eu/tools-and-services/invid-verification-plugin/", desc: "Розширення для перевірки відео: розбивка на ключові кадри, зворотний пошук фрагментів, метадані.", status: "free" },
+    { name: "yt-dlp", url: "https://github.com/yt-dlp/yt-dlp", desc: "Завантажує відео/субтитри/метадані з сотень платформ — зберегти доказ до того, як оригінал приберуть.", status: "free" },
+    { name: "Overpass Turbo", url: "https://overpass-turbo.eu/", desc: "Запити до OpenStreetMap — звірити об'єкти на фото з реальною місцевістю.", status: "free" },
+    { name: "SunCalc", url: "https://www.suncalc.org/", desc: "Позиція сонця/довжина тіні за часом і координатами — звірка часу і локації фото.", status: "free" },
+    { name: "Copernicus Browser", url: "https://dataspace.copernicus.eu/ecosystem/services/copernicus-browser", desc: "Супутникові знімки Sentinel у вільному доступі — порівняння місцевості за датами.", status: "free" },
+    { name: "FOCA", url: "https://github.com/ElevenPaths/FOCA", desc: "Збирає метадані з документів, опублікованих на домені (автори, шляхи, софт).", status: "free", note: "останній коміт 27.08.2021; Windows, .NET Framework, SQL Server — розвиток фактично зупинений, але досі працює" },
+  ]},
+  { cat: "Вебархіви та збереження доказів", items: [
+    { name: "Wayback Machine", url: "https://web.archive.org/", desc: "Архів історичних версій сторінок; 'Save Page Now' фіксує поточний стан як доказ.", status: "free" },
+    { name: "ArchiveWeb.page / ReplayWeb.page", url: "https://webrecorder.net/", desc: "Локальне збереження сторінки у WARC/WACZ і офлайн-відтворення — коли потрібна власна копія доказу, а не чужий архів.", status: "free" },
+  ]},
+  { cat: "Зливи даних / тіньовий веб", items: [
+    { name: "Intelligence X", url: "https://intelx.io/", desc: "Пошук по зливах, darknet, пастебінах.", status: "free", note: "без реєстрації — 2 пошуки/день, на Free-плані — 50/день; завантаження знайдених документів на Free недоступне" },
+    { name: "DeHashed", url: "https://dehashed.com/", desc: "База злитих облікових даних з повнотекстовим пошуком; доступ лише платний.", status: "paid" },
+  ]},
+  { cat: "Бізнес / публічні реєстри", items: [
+    { name: "OpenCorporates", url: "https://opencorporates.com/", desc: "Найбільша відкрита база реєстрацій компаній світу.", status: "key", note: "безкоштовний пошук в інтерфейсі; API — за ключем і платним комерційним планом (пільгові умови є для відкритих/суспільно корисних проєктів)" },
+    { name: "SEC EDGAR Full-Text Search", url: "https://www.sec.gov/edgar/search/", desc: "Звітність публічних компаній США — власники, судові ризики, контракти.", status: "free" },
+    { name: "Опендатабот", url: "https://opendatabot.ua/", desc: "Реєстр юросіб/ФОП, суди, податковий борг, зв'язки — українські дані.", status: "key" },
+    { name: "YouControl", url: "https://youcontrol.com.ua/", desc: "Глибший due diligence по українських компаніях; пробний доступ, далі платно.", status: "paid" },
+  ]},
+  { cat: "Санкції, бенефіціари, посадовці", items: [
+    { name: "OpenSanctions", url: "https://www.opensanctions.org/", desc: "Зведені санкційні та PEP-списки з усього світу, пошук по особах і компаніях.", status: "free", note: "масове завантаження/API великих обсягів — за ключем" },
+    { name: "ICIJ Offshore Leaks", url: "https://offshoreleaks.icij.org/", desc: "Бази зливів Panama/Paradise/Pandora Papers — офшорні структури і бенефіціари.", status: "free" },
+    { name: "Реєстр декларацій НАЗК", url: "https://public.nazk.gov.ua/", desc: "Публічні декларації українських посадовців: доходи, майно, зв'язки.", status: "free" },
+  ]},
+  { cat: "Транспорт", items: [
+    { name: "ADS-B Exchange", url: "https://globe.adsbexchange.com/", desc: "Трекінг літаків без фільтрації військових/урядових бортів.", status: "free" },
+    { name: "Flightradar24", url: "https://www.flightradar24.com/", desc: "Трекінг рейсів у реальному часі.", status: "free", note: "безкоштовний план — 7 днів історії маршруту; розширена історія й API продаються окремо" },
+    { name: "MarineTraffic", url: "https://www.marinetraffic.com/", desc: "Позиції і маршрути суден за AIS-сигналом.", status: "free", note: "вебкарта з базовими даними безкоштовна; розширені дані й API — за ключем/платно" },
+  ]},
+];
+
+const main = document.getElementById("main");
+const navEl = document.getElementById("catnav");
+let activeFilter = "all";
+let query = "";
+
+function badgeFor(status) {
+  if (status === "free") return '<span class="badge b-free">вільно</span>';
+  if (status === "key") return '<span class="badge b-key">потрібен ключ</span>';
+  if (status === "paid") return '<span class="badge b-paid">платно</span>';
+  return "";
+}
+
+function matches(item, cat) {
+  if (activeFilter === "stack" && !item.stack) return false;
+  if (activeFilter === "free" && item.status !== "free") return false;
+  if (activeFilter === "key" && item.status !== "key") return false;
+  if (activeFilter === "paid" && item.status !== "paid") return false;
+  if (query) {
+    const hay = (item.name + " " + item.desc + " " + cat).toLowerCase();
+    if (!hay.includes(query)) return false;
+  }
+  return true;
+}
+
+function render() {
+  main.innerHTML = "";
+  navEl.innerHTML = "";
+  let totalShown = 0;
+  let totalAll = 0, freeAll = 0, stackAll = 0;
+
+  DATA.forEach(cat => {
+    cat.items.forEach(it => {
+      totalAll++;
+      if (it.status === "free") freeAll++;
+      if (it.stack) stackAll++;
+    });
+  });
+  document.getElementById("stat-total").textContent = totalAll;
+  document.getElementById("stat-free").textContent = freeAll;
+  document.getElementById("stat-stack").textContent = stackAll;
+
+  DATA.forEach((cat, ci) => {
+    const shown = cat.items.filter(it => matches(it, cat.cat));
+    const navLink = document.createElement("a");
+    navLink.className = "navlink";
+    navLink.href = "#cat-" + ci;
+    navLink.innerHTML = `<span>${cat.cat}</span><span class="c">${shown.length}</span>`;
+    navEl.appendChild(navLink);
+
+    if (shown.length === 0) return;
+    totalShown += shown.length;
+
+    const section = document.createElement("section");
+    section.className = "cat";
+    section.id = "cat-" + ci;
+    section.innerHTML = `
+      <div class="cat-head">
+        <span class="cat-idx">${String(ci + 1).padStart(2, "0")}</span>
+        <h2>${cat.cat}</h2>
+        <span class="cat-count">${shown.length} / ${cat.items.length}</span>
+      </div>
+      <div class="grid"></div>
+    `;
+    const grid = section.querySelector(".grid");
+    shown.forEach(it => {
+      const card = document.createElement("div");
+      card.className = "card" + (it.stack ? " in-stack" : "");
+      card.innerHTML = `
+        <div class="card-top">
+          <h3><a href="${it.url}" target="_blank" rel="noopener">${it.name}</a></h3>
+        </div>
+        <p class="desc">${it.desc}</p>
+        ${it.note ? `<div class="note">${it.note}</div>` : ""}
+        ${it.cmd ? `<div class="cmd">${it.cmd}</div>` : ""}
+        <div class="badges">
+          ${it.stack ? '<span class="badge b-stack">у моєму osint-suite</span>' : ""}
+          ${badgeFor(it.status)}
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+    main.appendChild(section);
+  });
+
+  if (totalShown === 0) {
+    main.innerHTML = '<p class="empty">Нічого не знайдено — спробуй інший запит або фільтр.</p>';
+  }
+}
+
+document.getElementById("search").addEventListener("input", e => {
+  query = e.target.value.trim().toLowerCase();
+  render();
+});
+
+document.getElementById("filters").addEventListener("click", e => {
+  const btn = e.target.closest(".chip");
+  if (!btn) return;
+  activeFilter = btn.dataset.filter;
+  document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", c === btn ? "true" : "false"));
+  render();
+});
+
+render();
+</script>
